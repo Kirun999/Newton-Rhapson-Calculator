@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newton-Raphson Calculator + Point Input</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.3.2/math.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    body {
+      background-image: url('https://images.chesscomfiles.com/uploads/v1/images_users/tiny_mce/Durian_Defense/phpjGLveu.gif');
+      background-size: cover;
+      background-position: center;
+      font-family: 'Poppins', Arial, sans-serif;
+      color: white;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 25px;
+      border-radius: 20px;
+      max-width: 850px;
+      margin: auto;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease-in-out;
+      text-align: center;
+  margin-top: 15px;
+  margin-bottom: 15px;
+    }
+    .container:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+    }
+
+    #corner-image {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 90px;
+      border-radius: 50%;
+      border: 3px solid #FFFAF0;
+      overflow: hidden;
+      box-shadow: 0 0 10px #191970;
+      z-index: 10;
+    }
+
+    label { font-weight: bold; }
+    input, button {
+      width:100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 5px;
+      font-size: 14px;
+      
+    }
+    button {
+      background: linear-gradient(45deg, #00ffff, #0077ff);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 0 8px rgba(0,255,255,0.5);
+    }
+    button:hover {
+      transform: scale(1.05);
+      background: linear-gradient(45deg, #00ccff, #0055ff);
+      box-shadow: 0 0 15px rgba(0,255,255,0.8);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      color: black;
+      border-radius: 10px;
+      overflow: hidden;
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #00bcd4;
+      color: white;
+    }
+    canvas {
+      background-color: white;
+      border-radius: 10px;
+      margin-top: 20px;
+      margin-bottom: 25px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === Input Titik Style === */
+    .input-group {
+      display: flex;
+      justify-content: space-around;
+      background-color: rgba(255,255,255,0.15);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .point {
+      text-align: center;
+      flex: 1;
+    }
+    .point h3 { margin-bottom: 5px; color: #00ffff; }
+    .point input {
+      width: 70%;
+      margin: 4px;
+      text-align: center;
+      border-radius: 6px;
+      border: none;
+    }
+
+    @media (max-width: 600px) {
+      .input-group { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <img id="corner-image" src="https://upload.wikimedia.org/wikipedia/id/8/80/President_University.jpg" alt="Logo Universitas">
+
+  <div class="container">
+    <h2>Newton-Raphson Calculator</h2>
+
+    <h3>Input 3 Point ( x , y )</h3>
+    <div class="input-group">
+      <div class="point">
+        <h3>Point 1</h3>
+        x₁: <input type="number" id="x1" value="0"><br>
+        y₁: <input type="number" id="y1" value="0">
+      </div>
+      <div class="point">
+        <h3>Point 2</h3>
+        x₂: <input type="number" id="x2" value="0"><br>
+        y₂: <input type="number" id="y2" value="0">
+      </div>
+      <div class="point">
+        <h3>Point 3</h3>
+        x₃: <input type="number" id="x3" value="0"><br>
+        y₃: <input type="number" id="y3" value="0">
+      </div>
+    </div>
+
+    <button type="button" onclick="generateFunction()">Calculate the f(x) Funtion</button>
+
+    <form onsubmit="calculate(); return false;">
+      <label for="functionInput">f(x):</label>
+      <input type="text" id="functionInput" placeholder="Example: x**3 - x - 2" required>
+
+      <label for="derivativeInput">f'(x):</label>
+      <input type="text" id="derivativeInput" placeholder="Example: 3*x**2 - 1" required>
+
+      <label for="initialGuess">(xₙ):</label>
+      <input type="number" id="initialGuess" step="any" placeholder="Example: 1" required>
+
+      <label for="iterations">Number of Iterations :</label>
+      <input type="number" id="iterations" value="10" min="1" max="50">
+
+      <button type="submit">Calculate Newton-Raphson</button>
+    </form>
+
+    <h3>Iterations Result:</h3>
+    <div id="result"></div>
+
+    <canvas id="functionChart" width="600" height="300"></canvas>
+    <canvas id="iterationChart" width="600" height="300"></canvas>
+  </div>
+
+  <script>
+    let chart1, chart2;
+
+    // === Fungsi menghasilkan f(x) dari tiga titik ===
+    function generateFunction() {
+      const x1 = parseFloat(document.getElementById('x1').value);
+      const y1 = parseFloat(document.getElementById('y1').value);
+      const x2 = parseFloat(document.getElementById('x2').value);
+      const y2 = parseFloat(document.getElementById('y2').value);
+      const x3 = parseFloat(document.getElementById('x3').value);
+      const y3 = parseFloat(document.getElementById('y3').value);
+
+      if ([x1, x2, x3, y1, y2, y3].some(isNaN)) {
+        alert("Fill in all the x and y values ​​first!");
+        return;
+      }
+
+      if (x1 === x2 || x2 === x3 || x1 === x3) {
+        alert("All x values ​​must be different!");
+        return;
+      }
+
+      const A = [
+        [x1*x1, x1, 1],
+        [x2*x2, x2, 1],
+        [x3*x3, x3, 1]
+      ];
+      const B = [y1, y2, y3];
+
+      function det3(m) {
+        return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])
+             - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])
+             + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+      }
+
+      const D  = det3(A);
+      const Dx = det3([[B[0],A[0][1],A[0][2]],[B[1],A[1][1],A[1][2]],[B[2],A[2][1],A[2][2]]]);
+      const Dy = det3([[A[0][0],B[0],A[0][2]],[A[1][0],B[1],A[1][2]],[A[2][0],B[2],A[2][2]]]);
+      const Dz = det3([[A[0][0],A[0][1],B[0]],[A[1][0],A[1][1],B[1]],[A[2][0],A[2][1],B[2]]]);
+
+      const a = Dx / D, b = Dy / D, c = Dz / D;
+      const funcStr = `${a.toFixed(4)}*x**2 + ${b.toFixed(4)}*x + ${c.toFixed(4)}`;
+      document.getElementById('functionInput').value = funcStr;
+
+      // Update grafik fungsi kuadratik
+      drawFunctionChart((x)=>a*x*x+b*x+c, 0);
+    }
+
+    // === Fungsi Newton-Raphson ===
+    function calculate() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = "";
+
+      try {
+        const f = new Function('x', 'return ' + document.getElementById('functionInput').value);
+        const df = new Function('x', 'return ' + document.getElementById('derivativeInput').value);
+        let x = parseFloat(document.getElementById('initialGuess').value);
+        const n = Math.min(parseInt(document.getElementById('iterations').value), 50);
+
+        let rows = "";
+        let dataX = [], dataY = [];
+
+        for (let i = 0; i < n; i++) {
+          let fx = f(x);
+          let dfx = df(x);
+          if (dfx === 0) {
+            resultDiv.innerHTML = "<span style='color:red'>f'(x)=0, tidak dapat melanjutkan iterasi.</span>";
+            return;
+          }
+          let xNew = x - fx / dfx;
+          let error = Math.abs(xNew - x);
+          rows += `<tr><td>${i + 1}</td><td>${x.toFixed(6)}</td><td>${fx.toFixed(6)}</td><td>${dfx.toFixed(6)}</td><td>${error.toExponential(2)}</td></tr>`;
+          dataX.push(i + 1);
+          dataY.push(xNew);
+          x = xNew;
+        }
+
+        resultDiv.innerHTML = `
+          <table>
+            <tr><th>Iterasi</th><th>xₙ</th><th>f(xₙ)</th><th>f'(xₙ)</th><th>Error</th></tr>
+            ${rows}
+          </table>
+          <p><b>Akar Hampiran:</b> x ≈ ${x.toFixed(6)}</p>
+        `;
+
+        drawIterationChart(dataX, dataY);
+
+      } catch (err) {
+        resultDiv.innerHTML = `<span style='color:red'>Error fungsi: ${err.message}</span>`;
+      }
+    }
+
+    function drawFunctionChart(f, centerX) {
+      const ctx = document.getElementById('functionChart').getContext('2d');
+      if (chart1) chart1.destroy();
+
+      const xValues = [];
+      const yValues = [];
+      for (let x = centerX - 5; x <= centerX + 5; x += 0.2) {
+        xValues.push(x);
+        yValues.push(f(x));
+      }
+
+      chart1 = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: xValues.map(v=>v.toFixed(2)),
+          datasets: [{
+            label: 'f(x)',
+            data: yValues,
+            borderColor: 'cyan',
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false
+          },{
+            label: 'X Axis',
+            data: new Array(xValues.length).fill(0),
+            borderColor: 'red',
+            borderWidth: 1,
+            borderDash: [5,5],
+            pointRadius: 0
+          }]
+        },
+        options: {
+          plugins: { legend: { display: true } },
+          scales: {
+            x: { title: { display: true, text: 'x' } },
+            y: { title: { display: true, text: 'f(x)' } }
+          }
+        }
+      });
+    }
+
+    function drawIterationChart(dataX, dataY) {
+      const ctx = document.getElementById('iterationChart').getContext('2d');
+      if (chart2) chart2.destroy();
+      chart2 = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dataX,
+          datasets: [{
+            label: 'Value of x each Iteration',
+            data: dataY,
+            borderColor: 'lime',
+            backgroundColor: 'rgba(0,255,0,0.3)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          animation: { duration: 1500, easing: 'easeOutQuart' },
+          plugins: { legend: { display: true } },
+          scales: {
+            x: { title: { display: true, text: 'Iteration' } },
+            y: { title: { display: true, text: 'x' } }
+          }
+        }
+      });
+    }
+
+    // === Export ke PDF ===
+    document.getElementById('exportPDF').addEventListener('click', async () => {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p','mm','a4');
+      const container = document.querySelector('.container');
+      const canvas = await html2canvas(container,{scale:2});
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth=190;
+      const imgHeight=(canvas.height*imgWidth)/canvas.width;
+      pdf.addImage(imgData,'PNG',10,10,imgWidth,imgHeight);
+      pdf.save('Newton-Raphson-Result.pdf');
+    });
+  </script>
+</body>
+</html>
